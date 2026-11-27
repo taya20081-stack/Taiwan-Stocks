@@ -1,4 +1,4 @@
-import { asDate, cashFlow, companyDisclosures, compareIndustry, dailyUrls, disclosureUrls, fetchSources, finmindHistory, fundamentalUrls, jsonFetch, listedTradingDates, monthlyTradingUrl, normalizeDay, normalizeFundamentals, shiftDate, taipeiDate, tdccCsv } from './data.mjs';
+import { alignValuations, asDate, cashFlow, companyDisclosures, compareIndustry, dailyUrls, disclosureUrls, fetchSources, finmindHistory, fundamentalUrls, jsonFetch, listedTradingDates, monthlyTradingUrl, normalizeDay, normalizeFundamentals, shiftDate, taipeiDate, tdccCsv } from './data.mjs';
 import { VERSION, candidates, cashFields, chipFields, chipFlowDays, chipFlowPercent, chips, config, defaults, forecast, fundFields, indexes, isEvent, recommendationSignal, study, trade } from './model.mjs';
 import { flowIndicators, priceIndicators, priceWindows } from './indicators.mjs';
 import { acceptHistory, archiveList, historyCoverage, historySeries, streamStudy } from './history.mjs';
@@ -169,7 +169,7 @@ async function getFund(day, history, conf, provided) {
     fetched.result.tdcc=await tdccCsv().catch(()=>null);
     if(!fetched.result.tdcc)fetched.failed.push('tdcc');
   }
-  const frame=normalizeFundamentals(fetched.result,date);
+  const frame=alignValuations(normalizeFundamentals(fetched.result,date),history.days);
   frame.failures=fetched.failed;
   await addCash(history,day,frame,conf);
   return frame;

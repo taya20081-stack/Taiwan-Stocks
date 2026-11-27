@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "twstock": {
+      "type": "http",
+      "url": "https://tw-stock-mcp-server.fastmcp.app/mcp"
+    },
+    "finlab": {
+      "type": "http",
+      "url": "https://mcp.finlab.finance/mcp"
+    }
+  }
+}

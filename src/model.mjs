@@ -1,6 +1,6 @@
 import { adjustedBars, flowIndicators, kdFromBars, priceIndicators, priceWindows, reportIndicators } from './indicators.mjs';
 
-export const VERSION = '1.3';
+export const VERSION = '1.4';
 export const defaults = {
   horizon: 5, limit: 5, market: 'all', score: 60, amount: 20, fee: 0.1425, tax: 0.3, slip: 0.1,
   tech: 45, fund: 25, chip: 30, rules: []
@@ -116,6 +116,8 @@ export function chipFlowPercent({foreign,trust,active},bars) {
   const lots=bars.reduce((sum,row)=>sum+row[5],0)/1000;
   return lots>0?100*(foreign+trust+active)/lots:null;
 }
+export const chipScale=20;
+export const chipScore=ratio=>Number.isFinite(ratio)?50+50*Math.tanh(ratio/chipScale):null;
 export function chipFlowDays(bars) {
   if(bars.length!==5||!bars.every(row=>row&&[row[7],row[8],row[10]].every(Number.isFinite)))return {};
   const daily=bars.map(row=>row[7]+row[8]+row[10]);
@@ -127,7 +129,7 @@ export function chips(rows) {
   const [foreign, trust, dealer, active, hedge] = [7,8,9,10,11].map(sum);
   const named = {foreign,trust,dealer,active,hedge};
   const chipRatio=chipFlowPercent(named,span);
-  const chip=chipRatio===null?null:scale(chipRatio,6);
+  const chip=chipScore(chipRatio);
   const leader = groups.filter(([key]) => named[key] > 0).sort((a,b)=>named[b[0]]-named[a[0]])[0];
   return {...named,chip,chipRatio,...chipFlowDays(span),leader:leader?.[1] ?? '無明顯淨買超'};
 }

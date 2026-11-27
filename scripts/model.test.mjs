@@ -149,3 +149,30 @@ test('chip scoring ratio can be reconstructed from the saved flows and five matc
   assert.equal(chipFlowPercent({foreign:50,trust:null,active:10},bars),null);
   assert.equal(chipFlowPercent({foreign:50,trust:-10,active:10},bars.slice(1)),null);
 });
+
+test('chip score keeps ranking strong institutional flows instead of capping at one threshold',async()=>{
+  const {chipScore}=await import('../src/model.mjs');
+  assert.equal(chipScore(0),50);
+  assert.equal(chipScore(null),null);
+  assert.ok(Math.abs(chipScore(10)+chipScore(-10)-100)<1e-9);
+  const scores=[8.6,29.7,46.2].map(chipScore);
+  assert.ok(scores[0]<scores[1]&&scores[1]<scores[2]&&scores[2]<100);
+  assert.ok(scores[0]>65&&scores[0]<75);
+});
+test('valuations published for an earlier close are rescaled to the quote date',async()=>{
+  const {alignValuations}=await import('../src/data.mjs');
+  const row=(id,close,event=0)=>[id,close,close,close,close,1000,1000,null,null,null,null,null,event,null,id];
+  const days=[{date:'2026-11-25',rows:[row('L1477',223),row('L2597',193),row('L9999',50)]},
+    {date:'2026-11-26',rows:[row('L1477',233),row('L2597',193),row('L9999',60,1)]}];
+  const frame={asOf:'2026-11-26',records:{
+    L1477:{pe:14.72,pb:4.13,yield:6.73,valuationDate:'2026-11-25'},
+    L2597:{pe:16.33,pb:6.74,yield:5.01,valuationDate:'2026-11-26'},
+    L9999:{pe:10,pb:1,yield:5,valuationDate:'2026-11-25'}}};
+  alignValuations(frame,days);
+  assert.equal(frame.records.L1477.valuationDate,'2026-11-26');
+  assert.equal(frame.records.L1477.staleValuationDate,'2026-11-25');
+  assert.ok(Math.abs(frame.records.L1477.pe-15.38)<0.01);
+  assert.ok(Math.abs(frame.records.L1477.yield-6.44)<0.01);
+  assert.equal(frame.records.L2597.pe,16.33);
+  assert.equal(frame.records.L9999.pe,null);
+});

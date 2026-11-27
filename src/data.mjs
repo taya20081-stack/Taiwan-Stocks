@@ -289,6 +289,31 @@ export function normalizeFundamentals(raw, asOf) {
   }
   return { asOf, records };
 }
+export function alignValuations(frame, days) {
+  const asOf=frame?.asOf;
+  const current=days.find(day=>day.date===asOf);
+  if(!current)return frame;
+  const byDate=new Map(days.map(day=>[day.date,new Map(day.rows.map(row=>[row[0],row]))]));
+  const today=byDate.get(asOf);
+  for(const [id,record] of Object.entries(frame.records)){
+    const date=record.valuationDate;
+    if(!date||date>=asOf)continue;
+    const before=byDate.get(date)?.get(id), now=today.get(id);
+    const between=days.filter(day=>day.date>date&&day.date<=asOf);
+    const event=between.some(day=>{const row=byDate.get(day.date).get(id);return !row||row[12];});
+    record.staleValuationDate=date;
+    if(!(before?.[4]>0)||!(now?.[4]>0)||event){
+      Object.assign(record,{pe:null,pb:null,yield:null,valuationDate:null});
+      continue;
+    }
+    const ratio=now[4]/before[4];
+    if(record.pe>0)record.pe*=ratio;
+    if(record.pb>0)record.pb*=ratio;
+    if(record.yield>0)record.yield/=ratio;
+    record.valuationDate=asOf;
+  }
+  return frame;
+}
 export async function cashFlow(code, asOf) {
   const start = (Number(asOf.slice(0,4))-1) + '-12-31';
   const data = await jsonFetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockCashFlowsStatement&data_id=' + code + '&start_date=' + start);
