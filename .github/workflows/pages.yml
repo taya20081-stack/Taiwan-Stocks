@@ -1,0 +1,64 @@
+name: 部署到 GitHub Pages
+# 合併到 main 就自動上線；交易日收盤後自動抓取行情、更新推薦。
+# 網站檔案與資料都發布在 gh-pages 分支（Pages 來源請設為 gh-pages / root）。
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '40 9 * * 1-5'    # 台灣 17:40，行情與法人資料已齊
+    - cron: '30 12 * * 1-5'   # 台灣 20:30，補抓財報與公司資料
+  workflow_dispatch:
+    inputs:
+      seed_days:
+        description: 首次建立資料時回補的日曆天數（已有資料則忽略）
+        default: '200'
+permissions:
+  contents: write
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: 取得 gh-pages 分支（網站與資料）
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+            git clone --depth 1 --branch gh-pages "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" site
+          else
+            mkdir site
+          fi
+      - name: 測試
+        run: npm test
+      - name: 首次建立歷史資料
+        if: hashFiles('site/data/index.json') == ''
+        env:
+          SEED_DAYS: ${{ inputs.seed_days || '200' }}
+        run: |
+          END=$(TZ=Asia/Taipei date -d 'yesterday' +%F)
+          START=$(TZ=Asia/Taipei date -d "$SEED_DAYS days ago" +%F)
+          python3 scripts/history.py "$START" "$END" /tmp/raw --workers 3 --timeout 20
+          node scripts/archive-history.mjs /tmp/raw /tmp/archives "$START" "$END"
+          node scripts/seed.mjs /tmp/raw /tmp/initial.gz "$END"
+          echo "SEED=--seed /tmp/initial.gz --archives /tmp/archives" >> "$GITHUB_ENV"
+      - name: 更新行情與推薦
+        run: node scripts/pages-update.mjs site/data ${SEED:-}
+      - name: 建置網站
+        run: node scripts/build-pages.mjs /tmp/out
+      - name: 發布到 gh-pages
+        run: |
+          find site -mindepth 1 -maxdepth 1 ! -name data ! -name .git -exec rm -rf {} +
+          cp -a /tmp/out/. site/
+          cd site
+          rm -rf .git
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "部署 ${GITHUB_SHA::7}（$(TZ=Asia/Taipei date +'%F %H:%M')）"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
