@@ -44,6 +44,8 @@ if(await bucket.head('initial.gz')){
     const {body}=await post('/api/refresh','{}');
     if(!body.updates?.length)break;
   }
+  // 最新交易日若還沒有含基本面的完整資料（收盤前或來源延遲），先抓一份基本面供計分。
+  await post('/api/fundamentals/refresh','{}');
   await call('/api/status');
 }
 await bucket.save();

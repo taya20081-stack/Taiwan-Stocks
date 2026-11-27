@@ -175,6 +175,29 @@ async function getFund(day, history, conf, provided) {
   return frame;
 }
 const validFundamentals=result=>['tm','om','tr','or','t_ci','o_ci'].every(k=>Array.isArray(result[k]) && result[k].length>100);
+// 收盤前（或當日行情尚未齊全）沒有「當日完整資料」，基本面仍要先抓好，
+// 讓最新一個交易日的推薦也能用最新財報、營收與估值計分。
+async function refreshResearch(bucket,load_=fetchSources) {
+  const today=taipeiDate();
+  const [history,conf]=await Promise.all([load(bucket),get(bucket,'strategy',defaults)]);
+  const latest=history.days.at(-1)?.date;
+  if(!latest)return {state:'請先匯入歷史資料。'};
+  if(history.frames[latest]?.asOf===latest)return {date:latest,state:'當日完整資料已含基本面。'};
+  const fetched=await load_(fundamentalUrls);
+  if(!validFundamentals(fetched.result))return {date:latest,state:'公司與財報資料來源暫時無法取得。',failed:fetched.failed};
+  if(!fetched.result.tdcc){
+    fetched.result.tdcc=await tdccCsv().catch(()=>null);
+    if(!fetched.result.tdcc)fetched.failed.push('tdcc');
+  }
+  const research=normalizeFundamentals(fetched.result,today);
+  research.failures=fetched.failed;
+  await addCash(history,history.days.at(-1),research,conf);
+  await put(bucket,'research',research);
+  const records=Object.values(research.records);
+  return {date:latest,asOf:today,state:'已更新基本面資料。',companies:records.length,
+    revenue:records.filter(r=>Number.isFinite(r.yoy)).length,eps:records.filter(r=>Number.isFinite(r.eps)).length,
+    valuation:records.filter(r=>r.pe>0).length,cash:Object.keys(research.cash??{}).length,failed:fetched.failed};
+}
 const weekday=date=>new Date(date+'T00:00:00Z').getUTCDay()%6!==0;
 const trustedOrigin=request=>{
   const origin=request.headers.get('Origin');
@@ -432,6 +455,7 @@ export async function api(request,env,snapshotStyle='') {
       return json(result);
     }
     if (path==='/api/refresh'&&method==='POST') return json(await refresh(bucket));
+    if (path==='/api/fundamentals/refresh'&&method==='POST') return json(await refreshResearch(bucket,env.fetchSources));
     if(path==='/api/disclosures/import'&&method==='POST'){
       const body=await request.text();
       if(body.length>2_000_000)return json({error:'公告資料超過大小限制。'},400);

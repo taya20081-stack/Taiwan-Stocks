@@ -71,3 +71,41 @@ test('Actions store round-trips to disk and the browser reads the published file
     await rm(dir,{recursive:true,force:true});
   }
 });
+test('before the close, the Actions run still stores fundamentals so picks get a fundamentals score',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'research-'));
+  try {
+    const store=await openFsBucket(dir);
+    const days=sample(72);
+    for(const [month,bars] of Map.groupBy(days,day=>day.date.slice(0,7))){
+      assert.ok(await acceptHistory(store,month,gzipSync(JSON.stringify({days:bars})),'2026-01-01'));
+    }
+    await store.put('initial.gz',gzipSync(JSON.stringify({days})),{onlyIf:{etagDoesNotMatch:'*'}});
+    const released=new Date().toISOString().slice(0,10).replaceAll('-','');
+    const codes=Array.from({length:120},(_,i)=>String(1101+i));
+    const fetchSources=async()=>({failed:[],result:{
+      tm:codes.map(c=>({'公司代號':c,'公司簡稱':'公司'+c,'產業別':'01','出表日期':released})),
+      om:codes.map(c=>({SecuritiesCompanyCode:'2'+c.slice(1),CompanyAbbreviation:'櫃'+c,SecuritiesIndustryCode:'01',Date:released})),
+      tr:codes.map(c=>({'公司代號':c,'出表日期':released,'資料年月':'11510','產業別':'水泥','營業收入-當月營收':'1000','營業收入-去年同月增減(%)':'12.5'})),
+      or:codes.map(c=>({'公司代號':'2'+c.slice(1),'出表日期':released,'資料年月':'11510','產業別':'電子','營業收入-當月營收':'500','營業收入-去年同月增減(%)':'-3'})),
+      tv:codes.map(c=>({Date:released,Code:c,PEratio:'12',PBratio:'1.5',DividendYield:'3'})),
+      t_ci:codes.map(c=>({'公司代號':c,'出表日期':released,'年度':'115','季別':'3','基本每股盈餘（元）':'2.5','營業收入':'900','營業利益（損失）':'90'})),
+      o_ci:codes.map(c=>({SecuritiesCompanyCode:'2'+c.slice(1),Date:released,Year:'115',Season:'3','基本每股盈餘（元）':'1.5'}))
+    }});
+    const call=()=>api(new Request('https://lab.test/api/fundamentals/refresh',{method:'POST',body:'{}'}),{BUCKET:store,fetchSources});
+    const response=await call();
+    assert.equal(response.status,200);
+    const result=await response.json();
+    assert.equal(result.state,'已更新基本面資料。');
+    assert.equal(result.companies,240);
+    assert.equal(result.revenue,240);
+    assert.equal(result.eps,240);
+    assert.equal(result.valuation,120);
+    const saved=await store.get('research');
+    assert.ok(saved);
+    const research=await saved.json();
+    assert.equal(research.records.L1101.yoy,12.5);
+    assert.equal(research.records.L1101.eps,2.5);
+  } finally {
+    await rm(dir,{recursive:true,force:true});
+  }
+});

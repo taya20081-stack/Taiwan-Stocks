@@ -1,0 +1,16 @@
+name: 驗證基本面（暫時）
+on:
+  push:
+    branches: [claude/fix-fundamentals-score]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: git clone --depth 1 --branch gh-pages "https://github.com/${{ github.repository }}.git" site
+      - run: node scripts/verify-fundamentals.mjs site/data
