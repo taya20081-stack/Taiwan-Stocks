@@ -34,6 +34,7 @@ test('bucket conditional writes, metadata and paging follow R2 semantics',async(
   const rest=await bucket.list({prefix:'a/',cursor:page.cursor,limit:3});
   assert.deepEqual(rest.objects.map(o=>o.key),['a/4','a/5']);
   assert.equal(rest.truncated,false);
+  assert.ok(await bucket.put('disclosure/L/2026-11-26','v'));
   await assert.rejects(bucket.put('../x','v'));
 });
 test('Actions store round-trips to disk and the browser reads the published files',async()=>{
