@@ -61,6 +61,11 @@ function scoreReasons(row) {
   }
   if(ownership.length)ownership[0]='近 5 日'+ownership[0];
   if(Number.isFinite(row.chipRatio))ownership.push('上述合計占同期成交量 '+pct(row.chipRatio,true)+scoreEffect(row.chipRatio));
+  if(!Number.isFinite(row.fund)){
+    fundamental.push(row.info
+      ?'可計分項目不足 2 項（營收、財報、本益比、現金流），本次未計入基本面'
+      :'尚未取得公司營收與財報資料，本次推薦僅依技術面與籌碼面');
+  }
   return [
     ['技術面',technical,row.tech],['基本面',fundamental,row.fund],['籌碼面',ownership,row.chip]
   ];
