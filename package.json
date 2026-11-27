@@ -1,0 +1,10 @@
+{
+  "name": "taiwan-equity-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test scripts/*.test.mjs",
+    "test:mobile": "npm run build && python scripts/mobile.test.py"
+  }
+}
