@@ -2,7 +2,7 @@
 // index 是 Map(key → {etag,size,customMetadata})；read/write 由各環境提供。
 const encoder=new TextEncoder();
 export const objectPath=key=>'o/'+key+'.bin';
-export const validKey=key=>/^[a-z0-9][a-z0-9._/-]*$/.test(key)&&!key.includes('..');
+export const validKey=key=>/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(key)&&!key.includes('..');
 const toBytes=async value=>{
   if(value==null)return new Uint8Array();
   if(typeof value==='string')return encoder.encode(value);
