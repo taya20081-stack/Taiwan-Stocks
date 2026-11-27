@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101c2b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="台股研究台">
+<meta name="description" content="台股上市、上櫃的多因子選股、策略回測與推薦追蹤">
+<title>台股策略研究台</title>
+<link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="stylesheet" href="./style.css">
+<script src="./install.js" type="module"></script>
+<script src="./pages.js" type="module"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">跳到主要內容</a>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand-row">
+    <a class="brand" href="#screen"><span class="mark"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none"><path d="M7 24V9M16 25V5M25 24V11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="5" y="13" width="4" height="7" rx="1" fill="currentColor"/><rect x="14" y="9" width="4" height="9" rx="1" fill="currentColor"/><rect x="23" y="14" width="4" height="5" rx="1" fill="currentColor"/></svg></span><span>台股策略研究台<small>EQUITY RESEARCH</small></span></a>
+    <button type="button" class="install-action" id="pwa-install" hidden>安裝研究台</button>
+    </div>
+    <nav aria-label="主要導覽">
+      <a href="#screen" data-tab="screen"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 17l5-5 4 3 7-8m-5 0h5v5"/></svg>每日選股</a>
+      <a href="#rules" data-tab="rules"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14M9 4v4m6 2v4m-6 2v4"/></svg>策略規則</a>
+      <a href="#backtest" data-tab="backtest"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4v16h16M8 15l4-4 3 2 5-6"/></svg>回測分析</a>
+      <a href="#track" data-tab="track"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h4l2-5 4 10 2-5h4M4 5h16v14H4z"/></svg>推薦追蹤</a>
+      <a href="#analysis" data-tab="analysis"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5zm3 11 3-3 2 2 3-4m-1-6v4h4"/></svg>個股分析</a>
+      <a href="#sources" data-tab="sources" aria-label="資料與方法"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 6c0-3 14-3 14 0v12c0 3-14 3-14 0zm0 0c0 3 14 3 14 0M5 12c0 3 14 3 14 0"/></svg>資料方法</a>
+    </nav>
+    <div class="sidebar-foot"><span class="dot"></span><span>臺灣市場<small>Asia/Taipei · UTC+8</small></span></div>
+  </aside>
+  <main id="main-content" tabindex="-1">
+    <div class="topbar"><span>研究工作區 <span class="sep">/</span> <strong id="crumb">每日選股</strong></span><span id="clock">台灣交易日</span></div>
+    <div class="content">
+      <p id="pwa-offline" class="state" role="status" hidden>目前離線。重新連線後可查詢最新資料、儲存策略或執行回測。</p>
+      <section id="screen" class="page"></section>
+      <section id="rules" class="page" hidden></section>
+      <section id="backtest" class="page" hidden></section>
+      <section id="track" class="page" hidden></section>
+      <section id="analysis" class="page" hidden></section>
+      <section id="sources" class="page" hidden></section>
+    </div>
+  </main>
+</div>
+<div id="toast" role="status" aria-atomic="true"></div>
+<dialog id="detail" aria-labelledby="detail-title">
+  <header>
+    <h2 id="detail-title"></h2>
+    <button type="button" class="secondary" id="close-detail" autofocus>關閉</button>
+  </header>
+  <div id="detail-content" class="card-body"></div>
+</dialog>
+<dialog id="pwa-help" aria-labelledby="pwa-help-title">
+  <header>
+    <h2 id="pwa-help-title">安裝研究台</h2>
+    <form method="dialog"><button type="submit" class="secondary" autofocus>關閉</button></form>
+  </header>
+  <div class="card-body"><p id="pwa-instructions"></p></div>
+</dialog>
+</body>
+</html>
